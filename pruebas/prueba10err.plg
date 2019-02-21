@@ -1,0 +1,8 @@
+int entero;
+real realistico;
+
+@ error de tipos
+
+entero=realistico && entero;
+entero=realistico;
+realistico=!realistico;

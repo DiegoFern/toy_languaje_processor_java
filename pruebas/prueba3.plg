@@ -1,0 +1,15 @@
+@prueba acabada en comentario
+
+
+int c;
+real d;
+out c = 10+10*20;
+
+@prueba de pila a rebosar e indentacion
+d=1;
+out d = d+d+d+d+d+d+d+d+d+d+d+d+d+d
+	*d*d*c*d*c*d+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1
+	-1000.101
+	         ;
+
+@comentario final

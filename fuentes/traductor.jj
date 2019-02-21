@@ -1,0 +1,427 @@
+/* Para generar traductor:
+	javacc traductor.jj
+*/
+
+
+/* Creacion  y opciones de javaCC*/
+options {  
+	STATIC=false;
+	IGNORE_CASE = true;
+	OUTPUT_DIRECTORY = "./traductor";
+			   }
+PARSER_BEGIN(Traductor)
+	
+package traductor;
+
+import instrucciones.*;
+import java.util.ArrayList;
+import semantica.TablaSimbolos;
+import semantica.TablaSimbolos.TIPO;
+import semantica.FuncionesSemanticas;
+import semantica.Tipo;
+import semantica.Int;
+	
+public class Traductor {
+	
+	boolean errProg = false;
+	TablaSimbolos ts;
+	FuncionesSemanticas f= new FuncionesSemanticas();
+	ArrayList<Instruccion> cod = new ArrayList<Instruccion>();
+
+	public static void main(String[] args) 
+		throws ParseException, java.io.FileNotFoundException {
+
+		Traductor t = new Traductor(new 
+				java.io.FileInputStream(args[0]));
+		t.prog();
+		System.out.println(t.ts);
+		System.out.println(t.cod);
+	}
+	
+	public boolean getError() {return errProg;}
+	public ArrayList<Instruccion> getCode() {return cod;}
+}
+PARSER_END(Traductor)
+
+/**********
+* Tokens *
+**********/
+
+/*Ignorables*/
+
+SKIP: {
+  " "
+| "\t"
+| "\n"
+| "\r"
+| <"@" (~["\n","\r"])* ("\n"|"\r"|"\r\n")>
+}
+
+
+/* "#" delante del token indica que son categorias auxiliares*/
+
+TOKEN:{<#letra:["a"-"z"]>}
+TOKEN:{<#digpos:["1"-"9"]>}
+TOKEN:{<#dig:<digpos>|"0">}
+TOKEN:{<#dec:"."(<dig>)*<digpos>>}
+TOKEN:{<#exp:["e","E"]("-")?<litNat>>}
+
+
+TOKEN:{<litNat:"0"|(<digpos>(<dig>)*)>}
+TOKEN:{<litReal:<litNat>(<dec>|((<dec>)?<exp>))>}
+TOKEN:{
+	
+	<pyc: ";">
+|	<tInt: "int">
+|	<tReal: "real">
+|	<opAsig: "=">
+|	<opIgual: "==">
+|	<opMenor: "<">
+|	<opMayor: ">">
+|	<opMenIg: "<=">
+|	<opMayIg: ">=">
+|	<opDistinto: "!=">
+|	<opIn: "in">
+|	<opOut: "out">
+|	<opMenos: "-">
+|	<opNot: "!">
+|	<opAnd: "&&">
+|	<opOr: "||">
+|	<opMult: "*">
+|	<opDiv: "/">
+|	<opMod: "%">
+|	<opSuma: "+">
+|	<opCastInt: "(int)">
+|	<opCastReal: "(real)">
+|	<pa: "(">
+|	<pc: ")">
+
+}
+TOKEN:{<id:("_"|<letra>)("_"|<letra>|<dig>)*>}
+////////////////////////////////////////////////////////////////////////
+// ////////////////////// Producciones ////////////////////////////// //
+////////////////////////////////////////////////////////////////////////
+void prog() : {Int dir=new Int();} 
+{ 
+	{errProg = false;}
+	decs(dir) 
+	accs() 
+	<EOF>
+}
+////////////////////////////////////////////////////////////////////////
+void decs(Int dirDecs0) : 
+	{
+		StringBuilder idDec= new StringBuilder();
+		Tipo tipoDec=new Tipo();
+		Int dirDecs1= new Int();
+	} 
+{
+	dec(idDec, tipoDec)
+	decs(dirDecs1)
+	{dirDecs0.setValue(dirDecs1.getValue()+1);
+	errProg = errProg || ts.existeId(idDec.toString());
+	ts.aniadeID(idDec.toString(),tipoDec.getValue(),dirDecs1.getValue());}
+| /*------------------------------------------------------------------*/  
+ {}
+ 	{dirDecs0.setValue(1);
+ 	ts = new TablaSimbolos();}
+}
+////////////////////////////////////////////////////////////////////////
+void dec(StringBuilder idDec, Tipo tipoDec) : 
+	{Tipo tip=new Tipo(); Token tok;} 
+{
+	tipo(tip)
+	{tipoDec.setValue(tip.getValue());}
+	tok=<id> 
+	{idDec.append(tok.image);}
+	<pyc>
+}
+////////////////////////////////////////////////////////////////////////
+void tipo(Tipo tipoTipo) : {} 
+{
+	<tInt>
+	{tipoTipo.setValue(TIPO.ent);}
+| /*------------------------------------------------------------------*/  
+ <tReal>
+	{tipoTipo.setValue(TIPO.real);}
+}
+////////////////////////////////////////////////////////////////////////
+void accs() : {} {acc() raccs()}
+////////////////////////////////////////////////////////////////////////
+void raccs() : {} {acc() raccs() | {}}
+////////////////////////////////////////////////////////////////////////
+void acc() : {Tipo tipoE0 = new Tipo();} 
+{
+	expr0(tipoE0)
+	{
+		if(tipoE0.getValue() == TIPO.err) {
+			errProg=true;
+			System.err.println("error de tipos en linea:"+
+				token.endLine+ " col:"+token.endColumn);
+		}
+		f.emite(cod, new VaciaPila());
+	} 
+	<pyc>
+}
+////////////////////////////////////////////////////////////////////////
+void expr0(Tipo tipoE0) : {Token t; Tipo tipoE1 = new Tipo();}
+{
+	<opIn> 
+	t=<id> 
+	{
+		tipoE0.setValue(f.tipoDeU(opIn, ts.get(t.image).tipo));	
+		f.emite(cod, new Lee());
+		f.emite(cod, new CimaDir(ts.get(t.image).dir));
+	}
+	
+| /*------------------------------------------------------------------*/  
+	<opOut>
+	expr1(tipoE1)
+	{
+		f.emite(cod, new Imprime());
+		tipoE0.setValue(f.tipoDeU(opOut, tipoE1.getValue()));
+	}
+
+| /*------------------------------------------------------------------*/  
+	expr1(tipoE1)
+	{tipoE0.setValue(tipoE1.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void expr1(Tipo tipoE1) : {Tipo tipoE50 = new Tipo();
+				Tipo tipohR4 = new Tipo();
+				Tipo tipohR3 = new Tipo();
+				Tipo tipohR2 = new Tipo();
+				Tipo tipoR2 = new Tipo();
+				Tipo tipoR3 = new Tipo();
+				Tipo tipoR4 = new Tipo();
+				Tipo tipohR1 = new Tipo();
+				StringBuilder lexhR1 = new StringBuilder();
+				Token lex;
+				Tipo tipoR1 = new Tipo();} 
+{
+	expr5o(tipoE50)
+	{tipohR4.setValue(tipoE50.getValue());}
+	res4(tipohR4, tipoR4)
+	{tipohR3.setValue(tipoR4.getValue());}
+	res3(tipohR3, tipoR3)
+	{tipohR2.setValue(tipoR3.getValue());}
+	res2(tipohR2,tipoR2) 
+	{tipoE1.setValue(tipoR2.getValue());}
+| /*------------------------------------------------------------------*/  
+	lex=<id>
+	{
+		tipohR1.setValue(f.tipoId(ts, lex.image));
+		lexhR1.append(lex.image);
+	}
+	res1(lexhR1, tipohR1, tipoR1)
+	{ tipoE1.setValue(tipoR1.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void res1(StringBuilder lexhR1, Tipo tipohR1, Tipo tipoR1) : 
+	{Int opO1 = new Int(); Tipo tipoE1 = new Tipo();
+	 Tipo tipohR2 = new Tipo(); Tipo tipoR2 = new Tipo();
+	 Tipo tipohR3 = new Tipo(); Tipo tipoR3 = new Tipo();
+	 Tipo tipohR4 = new Tipo(); Tipo tipoR4 = new Tipo();
+	} 
+{
+	oper1(opO1)
+	expr1(tipoE1)
+	{
+		tipoR1.setValue(
+		f.tipoDeB(opO1.getValue(),tipohR1.getValue(),tipoE1.getValue()));
+		f.emite(cod, f.genCod1(ts, opO1.getValue(), lexhR1.toString()));
+	}
+| /*------------------------------------------------------------------*/  
+	{
+		f.emite(cod, new ApilaDir(ts.get(lexhR1.toString()).dir));
+		tipohR4.setValue(tipohR1.getValue());
+	}
+	res4(tipohR4, tipoR4)
+	{tipohR3.setValue(tipoR4.getValue());}
+	res3(tipohR3, tipoR3)
+	{tipohR2.setValue(tipoR3.getValue());}
+	res2(tipohR2, tipoR2)
+	{tipoR1.setValue(tipoR2.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void oper1(Int op): {} {<opAsig> {op.setValue(opAsig);}}
+////////////////////////////////////////////////////////////////////////
+void res2(Tipo tipohR2, Tipo tipoR2) : 
+	{Int opO2 = new Int(); Tipo tipoE3 = new Tipo();} 
+{
+	oper2(opO2)
+	expr3(tipoE3)
+	{
+		tipoR2.setValue(f.tipoDeB(opO2.getValue(),
+			tipohR2.getValue(), tipoE3.getValue()));
+		f.emite(cod, f.genCod2(opO2.getValue()));
+		
+	}
+| /*------------------------------------------------------------------*/  
+	{} 
+	{tipoR2.setValue(tipohR2.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void oper2(Int op) : {} 
+{
+	<opMayor> {op.setValue(opMayor);}
+| /*------------------------------------------------------------------*/  
+	<opMenor> {op.setValue(opMenor);}
+| /*------------------------------------------------------------------*/  
+	<opMayIg> {op.setValue(opMayIg);}
+| /*------------------------------------------------------------------*/  
+	<opMenIg> {op.setValue(opMenIg);}
+| /*------------------------------------------------------------------*/  
+	<opIgual> {op.setValue(opIgual);}
+| /*------------------------------------------------------------------*/  
+	<opDistinto> {op.setValue(opDistinto);}
+}
+////////////////////////////////////////////////////////////////////////
+void expr3(Tipo tipoE3) : 
+	{Tipo tipoE4 = new Tipo(); Tipo tipohR3 = new Tipo();
+	Tipo tipoR3 = new Tipo();} 
+{
+	expr4(tipoE4) {tipohR3.setValue(tipoE4.getValue());}
+	res3(tipohR3, tipoR3) {tipoE3.setValue(tipoR3.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void res3(Tipo tipohR30, Tipo tipoR30) : 
+	{Int opO3= new Int(); Tipo tipoE4 = new Tipo();
+	 Tipo tipohR31 = new Tipo(); Tipo tipoR31 = new Tipo();} 
+{
+	oper3(opO3)
+	expr4(tipoE4)
+	{
+		f.emite(cod, f.genCod3(opO3.getValue()));
+		tipohR31.setValue(f.tipoDeB(opO3.getValue(),
+			tipohR30.getValue(), tipoE4.getValue()));
+	}
+	res3(tipohR31, tipoR31) {tipoR30.setValue(tipoR31.getValue());}
+| /*------------------------------------------------------------------*/
+	{} {tipoR30.setValue(tipohR30.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void oper3(Int op) : {} 
+{
+	<opSuma> {op.setValue(opSuma);}
+| /*------------------------------------------------------------------*/
+	<opMenos> {op.setValue(opMenos);}
+| /*------------------------------------------------------------------*/
+	<opOr> {op.setValue(opOr);}
+}
+////////////////////////////////////////////////////////////////////////
+void expr4(Tipo tipoE4) : 
+	{Tipo tipoE5 = new Tipo(); Tipo tipohR4 = new Tipo();
+	 Tipo tipoR4 = new Tipo();} 
+{
+	expr5(tipoE5) {tipohR4.setValue(tipoE5.getValue());}
+	res4(tipohR4, tipoR4) {tipoE4.setValue(tipoR4.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void res4(Tipo tipohR40, Tipo tipoR40) : 
+	{Int opO4= new Int(); Tipo tipoE5 = new Tipo();
+	 Tipo tipohR41 = new Tipo(); Tipo tipoR41 = new Tipo();} 
+{
+	oper4(opO4)
+	expr5(tipoE5)
+	{
+		f.emite(cod, f.genCod4(opO4.getValue()));
+		tipohR41.setValue(f.tipoDeB(opO4.getValue(),
+			tipohR40.getValue(), tipoE5.getValue()));
+	}
+	res4(tipohR41, tipoR41) {tipoR40.setValue(tipoR41.getValue());}
+| /*------------------------------------------------------------------*/
+	{} {tipoR40.setValue(tipohR40.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void oper4(Int op) : {} {
+	<opMult> {op.setValue(opMult);}
+| /*------------------------------------------------------------------*/
+	<opDiv> {op.setValue(opDiv);}
+| /*------------------------------------------------------------------*/
+	<opMod> {op.setValue(opMod);}
+| /*------------------------------------------------------------------*/
+	<opAnd> {op.setValue(opAnd);}
+}
+////////////////////////////////////////////////////////////////////////
+void expr5(Tipo tipoE5) : {Tipo tipoE50 = new Tipo(); Token tok;} 
+{
+	tok =<id>
+	{
+		f.emite(cod, new ApilaDir(ts.get(tok.image).dir));
+		tipoE5.setValue(f.tipoId(ts, tok.image));
+	}
+| /*------------------------------------------------------------------*/
+	expr5o(tipoE50) {tipoE5.setValue(tipoE50.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void expr5o(Tipo tipoE50) : {Int op= new Int(); Tipo tipoE5 = new Tipo();
+	Tipo tipoE6 = new Tipo(); Tipo tipoE60 = new Tipo();} 
+{
+	oper5a(op)
+	expr5(tipoE5)
+	{
+		f.emite(cod, f.genCod5a(op.getValue()));
+		tipoE50.setValue(f.tipoDeU(op.getValue(), tipoE5.getValue()));
+	}
+| /*------------------------------------------------------------------*/
+	oper5n(op)
+	expr6(tipoE6)
+	{
+		f.emite(cod, f.genCod5n(op.getValue()));
+		tipoE50.setValue(f.tipoDeU(op.getValue(), tipoE6.getValue()));
+	}
+| /*------------------------------------------------------------------*/
+	expr6o(tipoE60)
+	{
+		tipoE50.setValue(tipoE60.getValue());
+	}
+}
+////////////////////////////////////////////////////////////////////////
+void oper5a(Int op) : {} 
+{
+	<opMenos> {op.setValue(opMenos);}
+| /*------------------------------------------------------------------*/
+	<opNot> {op.setValue(opNot);}
+}
+////////////////////////////////////////////////////////////////////////
+void oper5n(Int op) : {} 
+{
+	<opCastInt> {op.setValue(opCastInt);}
+| /*------------------------------------------------------------------*/
+	<opCastReal> {op.setValue(opCastReal);}
+}
+////////////////////////////////////////////////////////////////////////
+void expr6(Tipo tipoE6) : {Tipo tipoE60 = new Tipo(); Token tok;} 
+{
+	tok=<id>
+	{
+		f.emite(cod, new ApilaDir(ts.get(tok.image).dir));
+		tipoE6.setValue(f.tipoId(ts, tok.image));
+	}
+| /*------------------------------------------------------------------*/
+	expr6o(tipoE60) {tipoE6.setValue(tipoE60.getValue());}
+}
+////////////////////////////////////////////////////////////////////////
+void expr6o(Tipo tipoE60) : {Tipo tipoE0= new Tipo(); Token tok;} 
+{
+	tok=<litNat> 
+	{
+		f.emite(cod, new ApilaEntero(f.toInt(tok.image)));
+		tipoE60.setValue(TIPO.ent);
+	}
+| /*------------------------------------------------------------------*/  
+	tok=<litReal>
+	{
+		f.emite(cod, new ApilaReal(f.toReal(tok.image)));
+		tipoE60.setValue(TIPO.real);
+	}
+| /*------------------------------------------------------------------*/  
+	<pa>
+	expr0(tipoE0)
+	{
+		tipoE60.setValue(tipoE0.getValue());
+	}
+	<pc>
+}
+

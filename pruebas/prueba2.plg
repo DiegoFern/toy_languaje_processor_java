@@ -1,0 +1,11 @@
+@ Programa de ejemplo modificado conversion pesetas euros
+int PeSeTas; 
+reAl euros;  
+Real redOndeo;
+
+@el siguiente numero largo se acepta al contrario que enteros largos
+oUt euros = ((real) (in pesetas)) / 166.386666666666666666666666e0;
+
+@pesetas euros con redondeo, o expresion compleja porque si
+
+ouT rEdondEo = -(redondeo =  pEsetas/167 - (pesetas  / 166.386 )+1 );

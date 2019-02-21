@@ -1,0 +1,12 @@
+int centimos;
+@prueba error modulo no positivo
+out centimos = 10>-10*!20+20;
+
+
+out (out 3);
+
+
+
+centimos = 5 % -1;
+centimos = 5 % 1;
+

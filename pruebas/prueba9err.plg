@@ -1,0 +1,6 @@
+int centimos;
+
+@error integer demasiado largo
+centimos = 111111111111111111111111111111111;
+
+

@@ -1,0 +1,8 @@
+int entero;
+real realistico;
+
+out (real)50.7*2;
+@error decimal acabado en cero
+realistico = 5*3.10;1;
+@error tipos
+entero = 12.5;

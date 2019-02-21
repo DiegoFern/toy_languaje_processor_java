@@ -1,0 +1,10 @@
+@ Programa de ejemplo
+
+real cantidad;
+int euros;
+real centimos;
+
+
+out euros = (int)(in cantidad);
+out cantidad;
+out centimos = cantidad - euros;
