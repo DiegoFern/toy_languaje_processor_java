@@ -1,6 +1,6 @@
 
-# toy_languaje_processor_java
-Languge processor (compiler , and interpreter ).
+# toy_language_processor_java
+Langauge processor (compiler , and interpreter ).
 Code in spanish from my years in college (2011)
 
 > This code is old but i think it could be usefull for someone learning 
